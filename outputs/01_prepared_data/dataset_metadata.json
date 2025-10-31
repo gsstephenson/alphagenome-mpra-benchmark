@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "genome_reference": "mm9",
+  "total_variants": 6963,
+  "pool6_variants": 3720,
+  "pool7_variants": 3243,
+  "sequence_length": 2048,
+  "strand_aware": true,
+  "log2_ratio_mean": -1.075011904592624,
+  "log2_ratio_std": 1.7391247489082449
+}

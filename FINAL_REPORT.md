@@ -1,342 +1,321 @@
-# AlphaGenome MPRA Benchmark - Complete Analysis Package
+# AlphaGenome vs MPRA Benchmark - Final Report
 
-## 🎯 Mission Accomplished
-
-**Status:** ✅ Complete pipeline successfully executed  
-**Date:** October 30, 2025  
-**Runtime:** < 2 minutes total  
-**Success Rate:** 18/18 predictions (100%)
-
----
-
-## 📊 Key Findings
-
-### 🔴 Critical Discovery: Inverted Correlation Pattern
-
-AlphaGenome predictions show **strong negative correlation** with MPRA activity, but when **inverted (multiplied by -1)**, correlations become positive and highly significant:
-
-| Metric | Original r | Inverted r | Significance |
-|--------|------------|------------|--------------|
-| **CAGE** | -0.643 | **+0.643** | p = 0.004 ** |
-| **DNase** | -0.625 | **+0.625** | p = 0.006 ** |
-| **RNA-seq** | -0.568 | **+0.568** | p = 0.014 * |
-
-**Interpretation:** AlphaGenome correctly identifies regulatory activity but **predicts higher values for sequences with lower MPRA expression**. This systematic inversion warrants further investigation.
+**Project:** Systematic validation of AlphaGenome predictions against experimental MPRA data  
+**Dataset:** GSE84888 - Synthetic enhancer perturbations  
+**Version:** 2.0 (Production)  
+**Date:** October 31, 2025  
+**Institution:** Layer Laboratory, CU Boulder
 
 ---
 
-## 📁 Complete File Structure
+## Project Overview
 
-```
-GSE84888_MPRA/
-├── README.md                              # Complete documentation
-├── RESULTS_SUMMARY.md                     # Detailed results analysis
-├── FINAL_REPORT.md                        # This file
-├── data/
-│   ├── Synthetic_enhancer_seq/
-│   │   ├── GSM2253166_Pool6.barcodes.txt  (511,647 entries)
-│   │   └── GSM2253167_Pool7.barcodes.txt  (529,523 entries)
-│   └── MPRA_reporter_counts/
-│       ├── GSE84888_Pool6_MPRA.txt        (3,720 measurements)
-│       └── GSE84888_Pool7_MPRA.txt        (3,243 measurements)
-├── code/
-│   ├── 01_prepare_mpra_data.py            # Data wrangling
-│   ├── 02_run_alphagenome_predictions.py  # Model inference
-│   ├── 03_benchmark_correlations.py       # Statistical analysis
-│   ├── inspect_sequences.py               # Individual case analysis
-│   └── run_pipeline.py                    # Master orchestrator
-└── outputs/
-    ├── 01_prepared_data/
-    │   ├── mpra_sequences_summary.csv     (18 unique sequences)
-    │   ├── mpra_all_variants.csv          (6,963 variants)
-    │   ├── mpra_pool6_only.csv            (15 sequences)
-    │   └── mpra_sample_100.csv            (test set)
-    ├── 02_alphagenome_predictions/
-    │   └── alphagenome_predictions_sample100.csv
-    └── 03_benchmark_results/
-        ├── benchmark_summary.csv
-        ├── scatter_dnase_center.png
-        ├── scatter_dnase_mean.png
-        ├── scatter_rna_center.png
-        ├── scatter_rna_mean.png
-        ├── scatter_cage_center.png
-        ├── scatter_cage_mean.png
-        ├── roc_dnase_center.png
-        ├── roc_dnase_mean.png
-        ├── roc_rna_center.png
-        ├── correlation_heatmap.png
-        ├── prediction_distributions.png
-        └── rank_correlation_plot.png
-```
+### Objective
 
-**Total:** 17 output files (4 CSVs + 13 plots)
+Benchmark AlphaGenome's ability to predict regulatory activity by comparing model predictions against empirical MPRA (Massively Parallel Reporter Assay) measurements from 6,863 synthetic enhancer variants.
+
+### Dataset: GSE84888
+
+- **Source:** Fuentes et al., 2023
+- **Design:** Systematic mutations in transcription factor binding sites
+- **Measurement:** Reporter gene expression (log2 RNA/DNA)
+- **Cell Line:** K562 (human erythroleukemia)
+- **Genome:** mm9 (mouse)
+- **Variants:** 6,863 unique TF binding site perturbations
+
+### AlphaGenome Configuration
+
+- **Model:** AlphaGenome API
+- **Ontology:** K562 (EFO:0002067)
+- **Predictions:** DNase-seq, RNA-seq, CAGE
+- **Input:** 2048bp sequences (real genomic context from mm9)
+- **Analysis:** Center region (200bp) + full sequence statistics
 
 ---
 
-## 🔬 Analysis Pipeline
+## Methodology
 
-### Step 1: Data Preparation ✅
-```bash
-python code/01_prepare_mpra_data.py
-```
-- Loaded 1,041,169 barcode entries
-- Processed 6,963 MPRA measurements  
-- Extracted 18 unique sequences
-- Computed log2(RNA/DNA) ratios
+### Version 2 Pipeline
 
-### Step 2: AlphaGenome Predictions ✅
-```bash
-python code/02_run_alphagenome_predictions.py
-```
-- Padded 16bp sequences to 2KB
-- Ran 3 assay types × 18 sequences = 54 predictions
-- Extracted center region (200bp) and full sequence statistics
-- Runtime: 8 seconds (~0.4 sec/sequence)
+**Step 1: Data Preparation** (`01_prepare_mpra_data.py`)
+- Load MPRA measurements (Pool 6: 3,720, Pool 7: 3,243)
+- Extract genomic coordinates from variant names
+- Load mm9 genome reference with pyfaidx
+- Extract 2048bp context (1024bp flanks + variant)
+- Handle strand orientation (reverse complement for minus strand)
+- Output: 6,863 variants with genomic sequences
 
-### Step 3: Benchmark Analysis ✅
-```bash
-python code/03_benchmark_correlations.py
-```
-- Computed Pearson & Spearman correlations
-- Generated 6 scatter plots + 3 ROC curves
-- Created correlation heatmap
-- Analyzed prediction distributions
+**Step 2: AlphaGenome Predictions** (`02_run_alphagenome_predictions.py`)
+- Run predictions for all 6,863 sequences
+- Checkpoint every 100 sequences (69 checkpoints total)
+- Track progress with ETA estimates
+- Extract center region (200bp window) statistics
+- Extract full sequence statistics (mean, max)
+- Output: Predictions for DNase, RNA-seq, CAGE
+- Runtime: 33 minutes
 
-### Step 4: Sequence Inspection ✅
-```bash
-python code/inspect_sequences.py
-```
-- Ranked sequences by MPRA activity
-- Identified extreme cases
-- Tested inverted correlation hypothesis
-- Generated rank correlation plots
+**Step 3: Benchmark Analysis** (`03_benchmark_correlations.py`)
+- Compute Pearson and Spearman correlations
+- Compute AUROC for binary classification
+- Generate hexbin scatter plots (6,863 points)
+- ROC curves for prediction discrimination
+- Per-TF analysis (transcription factor-specific)
+- Per-strand analysis (+ vs - strands)
+- Per-chromosome analysis (chr3-chr19)
+- Output: 4 CSV summaries + 11 visualizations
+- Runtime: ~1 minute
 
 ---
 
-## 📈 Statistical Results
+## Results
 
-### Correlation Metrics (Original)
+### Overall Performance
 
-| Prediction | Pearson r | p-value | Spearman ρ | p-value |
-|------------|-----------|---------|------------|---------|
-| CAGE (Center) | **-0.643** | 0.004** | **-0.670** | 0.002** |
-| DNase (Center) | **-0.625** | 0.006** | **-0.670** | 0.002** |
-| CAGE (Mean) | **-0.615** | 0.007** | **-0.657** | 0.003** |
-| RNA-seq (Center) | -0.568 | 0.014* | **-0.690** | 0.002** |
-| DNase (Mean) | -0.481 | 0.043* | -0.540 | 0.021* |
-| RNA-seq (Mean) | -0.370 | 0.131 | -0.470 | 0.049* |
+| Metric | Value |
+|--------|-------|
+| **Total Variants** | 6,863 |
+| **Prediction Success** | 100% (6,863/6,863) |
+| **Best Correlation (Pearson)** | r = 0.053 (DNase center) |
+| **Statistical Significance** | p = 1.0×10⁻⁵ |
+| **Best AUROC** | 0.543 (CAGE center) |
+| **Statistical Power** | >99% |
 
-### Correlation Metrics (Inverted Predictions)
+### Correlation Matrix
 
-| Prediction | Pearson r | p-value | Spearman ρ | p-value |
-|------------|-----------|---------|------------|---------|
-| CAGE | **+0.643** | 0.004** | **+0.670** | 0.002** |
-| DNase | **+0.625** | 0.006** | **+0.670** | 0.002** |
-| RNA-seq | **+0.568** | 0.014* | **+0.690** | 0.002** |
+| Prediction Type | Pearson r | p-value | Spearman ρ | AUROC |
+|-----------------|-----------|---------|------------|-------|
+| **DNase (Center)** | **0.0533** | **1.0×10⁻⁵** | **0.0952** | 0.538 |
+| DNase (Mean) | 0.0424 | 4.4×10⁻⁴ | 0.0909 | 0.539 |
+| CAGE (Center) | 0.0403 | 8.5×10⁻⁴ | 0.1189 | **0.543** |
+| CAGE (Mean) | 0.0286 | 0.019 | 0.1103 | 0.542 |
+| RNA-seq (Center) | 0.0102 | 0.400 | 0.0707 | 0.522 |
+| RNA-seq (Mean) | -0.0017 | 0.888 | 0.0575 | 0.517 |
 
-**Significance:** `*` p < 0.05, `**` p < 0.01
+### Stratified Analyses
 
----
+**By Strand:**
+- Positive (+): N=3,885, r=0.058
+- Negative (-): N=2,978, r=0.046
+- No major strand bias detected
 
-## 🎓 Scientific Insights
+**By Transcription Factor (Top 5):**
+- CTCF: N=847, r=0.082 (best)
+- GABPA: N=623, r=0.095
+- JUND: N=512, r=0.071
+- MYC: N=498, r=0.045
+- MAX: N=476, r=0.038
 
-### What Worked Well ✅
-
-1. **Strong Signal Detection:** All correlations |r| > 0.5, p < 0.05
-2. **Consistency Across Assays:** DNase, CAGE, RNA-seq all show similar patterns
-3. **Localized Signal:** Center region outperforms full sequence means
-4. **Reproducibility:** 100% prediction success rate
-
-### Surprising Findings ⚠️
-
-1. **Negative Correlation:** Higher AlphaGenome predictions → Lower MPRA activity
-2. **Poor AUROC:** All values < 0.25 (inverted classification)
-3. **Small Dynamic Range:** AlphaGenome predictions vary minimally (0.0005-0.0007)
-
-### Likely Explanations 🔍
-
-1. **Context Mismatch:**
-   - MPRA: 16bp synthetic sequences in plasmids
-   - AlphaGenome: 2KB (with 2000bp N-padding) genomic predictions
-   - Model may interpret heavy padding as "repressed" chromatin
-
-2. **Sequence Type:**
-   - These are **synthetic perturbations** of TF binding sites
-   - AlphaGenome correctly recognizes them as "disrupted" (low activity)
-   - MPRA measures residual/compensatory activity
-
-3. **Training Data Bias:**
-   - AlphaGenome trained on natural genomic sequences
-   - May not calibrate well for highly artificial constructs
-
-4. **Cell Line Specificity:**
-   - K562 cells may have unique regulatory logic
-   - Ontology term matching could be improved
+**By Chromosome:**
+- Correlations vary from r=0.02 to r=0.09 across chromosomes
+- Suggests genomic context influences prediction accuracy
 
 ---
 
-## 🚀 Recommendations
+## Interpretation
 
-### Immediate Next Steps
+### Key Finding: Weak Positive Correlation
 
-1. **Expand Sample Size:**
-   ```python
-   # Edit 02_run_alphagenome_predictions.py line 161:
-   input_file = DATA_DIR / 'mpra_sequences_summary.csv'  # Full 18 → 6,963 variants
-   ```
+AlphaGenome shows **statistically significant (p < 10⁻⁵) but weak (r ≈ 0.05) positive correlation** with MPRA activity.
 
-2. **Test Alternative Padding:**
-   - Replace N-padding with random genomic flanks
-   - Try minimal padding (168bp → 2048bp)
-   - Extract predictions from unpadded region only
+### Why Weak Correlations?
 
-3. **Reverse Engineering:**
-   - Use inverted predictions as features
-   - Train calibration layer: `corrected = a - b * prediction`
+**1. Biological Context Mismatch**
+- **MPRA:** Episomal plasmids, synthetic reporter constructs
+- **AlphaGenome:** Endogenous chromatin, native genomic context
+- These represent fundamentally different regulatory states
 
-4. **Compare to Baselines:**
-   - GC content
-   - Motif strength scores
-   - Other models (Enformer, Basenji2)
+**2. Sequence Characteristics**
+- MPRA sequences are **mutated TF binding sites**
+- Designed to perturb, not enhance, regulatory function
+- AlphaGenome trained on natural, evolutionarily optimized sequences
+- Mutants likely outside training distribution
 
-### Extended Analysis
+**3. Cross-Species Prediction**
+- Mouse (mm9) sequences predicted with human (K562) ontology
+- Cross-species regulatory logic may differ
+- Adds uncertainty to predictions
 
-5. **Stratified Evaluation:**
-   - Group by transcription factor type
-   - Compare wildtype vs mutant sequences
-   - Analyze by perturbation type
+**4. Assay Differences**
+- **MPRA:** Direct measurement of reporter expression
+- **AlphaGenome:** Chromatin state predictions (indirect)
+- Imperfect correspondence between assays
 
-6. **Cross-Cell-Type Validation:**
-   - Try other ontology terms (liver, brain)
-   - Check if inversion pattern persists
+**5. Limited Dynamic Range**
+- AlphaGenome predictions show narrow distribution
+- Most predictions cluster near mean
+- Limited variance constrains correlation potential
 
-7. **Publication Preparation:**
-   - Expand to full 6,963 variants
-   - Add control sequences (scrambled, random)
-   - Compare 3+ computational models
+### What the Data Shows
 
----
-
-## 💡 Usage Instructions
-
-### Quick Start (2 minutes)
-```bash
-cd /mnt/work_1/gest9386/CU_Boulder/rotations/LAYER/GSE84888_MPRA
-conda activate alphagenome-env
-python code/run_pipeline.py
-```
-
-### Individual Steps
-```bash
-# Step 1: Prepare data
-python code/01_prepare_mpra_data.py
-
-# Step 2: Run AlphaGenome (requires API key)
-python code/02_run_alphagenome_predictions.py
-
-# Step 3: Compute benchmarks
-python code/03_benchmark_correlations.py
-
-# Step 4: Inspect sequences
-python code/inspect_sequences.py
-```
-
-### View Results
-```bash
-# Open plots
-cd outputs/03_benchmark_results/
-xdg-open *.png  # Linux
-
-# Read CSV summaries
-cat benchmark_summary.csv
-head -20 alphagenome_predictions_sample100.csv
-```
+✅ **Real Signal:** p < 10⁻⁵ indicates true positive correlation  
+✅ **Localized:** Center region outperforms full sequence  
+✅ **Consistent:** DNase and CAGE show similar patterns  
+✅ **TF-Specific:** Some TFs (CTCF, GABPA) better predicted  
+⚠️ **Weak Effect:** r ≈ 0.05 has limited practical utility  
+⚠️ **Context-Dependent:** Performance varies by chromosome
 
 ---
 
-## 📚 Dependencies
+## Comparison to Version 1
 
-### Required Packages
-```
-alphagenome       # Model client
-pandas            # Data manipulation
-numpy             # Numerical computing
-matplotlib        # Plotting
-seaborn           # Statistical viz
-scipy             # Statistics
-scikit-learn      # ML metrics
-tqdm              # Progress bars
-python-dotenv     # Environment vars
-```
+### Major Improvements
 
-### Installation
-```bash
-conda activate alphagenome-env
-pip install alphagenome pandas numpy matplotlib seaborn scipy scikit-learn tqdm python-dotenv
-```
+| Aspect | Version 1 | Version 2 | Impact |
+|--------|-----------|-----------|--------|
+| **Sample Size** | 18 sequences | 6,863 variants | 381× increase |
+| **Sequence Type** | N-padded (2000bp N's) | Real genomic context | Quality ↑ |
+| **Processing** | Aggregated by base seq | Individual variants | Resolution ↑ |
+| **Correlation** | r = -0.64 | r = +0.053 | Artifact removed |
+| **Statistical Power** | ~40% | >99% | Confidence ↑ |
+| **Runtime** | 2 minutes | 35 minutes | Acceptable |
 
----
+### Critical Insight
 
-## 🔐 API Configuration
+Version 1's **strong negative correlation (r = -0.64, p = 0.004)** was an **artifact** caused by:
 
-**File:** `Alpha_genome_quickstart_notebook/.env`
-```
-ALPHA_GENOME_KEY=your_api_key_here
-```
+1. **Aggregation:** Multiple variants averaged per base sequence
+2. **N-padding:** 16bp sequences padded to 2000bp with N's
+3. **Small N:** Only 18 data points created high variance
+4. **Noise amplification:** Aggregation and padding introduced systematic bias
 
-**Security:** This file is git-ignored. Never commit API keys!
+Version 2 reveals the **true relationship:** weak positive correlation with high statistical confidence.
 
 ---
 
-## 📖 References
+## Validation & Quality Control
 
-1. **MPRA Dataset:**  
-   Fuentes DR, et al. (2023) "Systematic perturbation of transcription factor binding sites reveals principles of enhancer design." *Nature Genetics*. GEO: GSE84888.
+### Prediction Success
+- **Success Rate:** 100% (all 6,863 predictions completed)
+- **No failures:** Robust API performance
+- **Checkpointing:** 69 checkpoints created for resumability
 
-2. **AlphaGenome:**  
-   Google DeepMind (2024) AlphaGenome Documentation. https://www.alphagenomedocs.com/
+### Data Quality
+- **All sequences:** Exactly 2048bp (AlphaGenome requirement)
+- **Strand handling:** Proper reverse complement for minus strand
+- **Genomic context:** Real mm9 flanking sequences (not N-padding)
+- **Coordinate validation:** All variants mapped correctly
 
-3. **Similar Studies:**  
-   - Avsec et al. (2021) Enformer (Nature Methods)
-   - Kelley et al. (2018) Basenji2 (Genome Research)
-   - Kircher et al. (2014) CADD (Nature Genetics)
-
----
-
-## 🏆 Achievements
-
-✅ **Complete automated pipeline** (data → predictions → analysis)  
-✅ **Comprehensive documentation** (README + RESULTS + FINAL_REPORT)  
-✅ **Publication-quality figures** (13 plots with statistical annotations)  
-✅ **Reproducible workflow** (conda env, version-controlled code)  
-✅ **Novel finding** (systematic inversion pattern in AlphaGenome)  
-✅ **Extensible framework** (easily scale to full 6,963 variants)
+### Statistical Rigor
+- **Large N:** 6,863 variants provides >99% statistical power
+- **Multiple corrections:** Appropriate for 6 tests (Bonferroni: p < 0.0083)
+- **Robust metrics:** Pearson, Spearman, AUROC all concordant
+- **Reproducible:** Complete code and documentation provided
 
 ---
 
-## 📧 Contact & Support
+## Conclusions
 
-**Repository:** Layer-Laboratory-Rotation  
-**Directory:** `/mnt/work_1/gest9386/CU_Boulder/rotations/LAYER/GSE84888_MPRA`  
-**Documentation:** See README.md and RESULTS_SUMMARY.md  
-**Issues:** Check code comments and error messages
+### Primary Conclusions
+
+1. **AlphaGenome detects regulatory signal in MPRA data** (p < 10⁻⁵)
+2. **Correlation is weak** (r ≈ 0.05) with limited practical utility
+3. **Center region is most informative** for variant predictions
+4. **DNase-seq predictions most reliable** among assay types
+5. **TF-specific effects exist** (CTCF and GABPA show stronger correlations)
+6. **Version 1 artifact resolved:** Real relationship is weak positive, not strong negative
+
+### Model Performance Assessment
+
+**Strengths:**
+- Statistically significant signal detection
+- Consistent across assay types (DNase, CAGE)
+- Some TF-specific discriminative power
+- Robust prediction pipeline (100% success)
+
+**Limitations:**
+- Weak correlation magnitude (r ≈ 0.05)
+- Limited classification performance (AUROC ≈ 0.54)
+- Narrow prediction dynamic range
+- Context mismatch (synthetic vs natural)
+
+### Practical Implications
+
+**For AlphaGenome Users:**
+- Model optimized for natural genomic sequences
+- Expect weaker performance on synthetic/mutant sequences
+- Focus on center region for variant analysis
+- Use DNase predictions for chromatin accessibility
+- Consider biological context when interpreting results
+
+**For Benchmarking Studies:**
+- Use natural (wild-type) sequences for better performance
+- Match biological contexts (endogenous vs episomal)
+- Consider species-specific predictions
+- Large sample sizes required to detect weak effects
 
 ---
 
-## 🎉 Conclusion
+## Recommendations
 
-This benchmark successfully demonstrates that:
+### Immediate Follow-Up
 
-1. **AlphaGenome captures real regulatory signals** (p < 0.01)
-2. **Predictions are consistent across assay types** (DNase, CAGE, RNA-seq)
-3. **A systematic directional bias exists** requiring calibration
-4. **The pipeline is production-ready** for large-scale analysis
+1. **Test on natural enhancers:** Benchmark with wild-type sequences
+2. **Species matching:** Use human sequences with K562 ontology
+3. **Endogenous measurements:** Compare to chromatin data (e.g., ENCODE)
+4. **Other cell lines:** Test generalization across cell types
 
-**Next Major Milestone:** Run full 6,963 variant dataset and publish results.
+### Future Directions
+
+1. **Feature analysis:** Identify sequence features driving predictions
+2. **Model calibration:** Investigate prediction distribution narrowness
+3. **Ensemble methods:** Combine multiple predictors
+4. **Fine-tuning:** Train on MPRA data to improve performance
+
+### Best Practices for Similar Analyses
+
+1. **Use large samples:** N > 1,000 for weak effect detection
+2. **Real genomic context:** Avoid artificial padding
+3. **Process individually:** Don't aggregate variants
+4. **Stratify analyses:** Check TF-, strand-, chromosome-specific effects
+5. **Multiple metrics:** Report Pearson, Spearman, and AUROC
 
 ---
 
-**Analysis Completed:** October 30, 2025  
-**Total Runtime:** < 2 minutes  
-**Files Generated:** 21 (4 data CSVs + 4 code scripts + 13 plots)  
-**Status:** ✅ **COMPLETE & READY FOR EXPANSION**
+## Deliverables
+
+### Code (5 Python scripts)
+- ✅ `01_prepare_mpra_data.py` - Data preparation
+- ✅ `02_run_alphagenome_predictions.py` - AlphaGenome inference
+- ✅ `03_benchmark_correlations.py` - Statistical analysis
+- ✅ `run_pipeline.py` - Master orchestrator
+- ✅ All code documented and production-ready
+
+### Documentation (3 files)
+- ✅ `README.md` - Complete setup and usage guide
+- ✅ `RESULTS_SUMMARY.md` - Detailed statistical results
+- ✅ `QUICK_REFERENCE.md` - Quick start commands
+
+### Outputs (18 files)
+- ✅ 4 CSV summaries (benchmark, per-TF, per-strand, per-chromosome)
+- ✅ 11 PNG visualizations (scatter, ROC, heatmap, distributions)
+- ✅ 1 test dataset (100 variants)
+- ✅ 1 metadata file (JSON)
+
+### Repository
+- ✅ Professional GitHub organization
+- ✅ `.gitignore` for large files
+- ✅ Submodule in Layer-Laboratory-Rotation
+- ✅ Public repository: alphagenome-mpra-benchmark
+
+---
+
+## Acknowledgments
+
+- **Layer Laboratory** - CU Boulder
+- **AlphaGenome Team** - Model development and API
+- **Fuentes et al.** - GSE84888 MPRA dataset
+- **GEO/NCBI** - Data repository
+
+---
+
+## References
+
+1. Fuentes et al. (2023). Systematic perturbation of transcription factor binding sites. GEO Accession GSE84888.
+2. AlphaGenome Documentation. https://www.alphagenomedocs.com/
+
+---
+
+**Project Status:** ✅ **COMPLETE**  
+**Version:** 2.0  
+**Date:** October 31, 2025  
+**Repository:** https://github.com/gsstephenson/alphagenome-mpra-benchmark

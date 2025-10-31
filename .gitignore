@@ -22,9 +22,21 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Large data files (optional - can be added to Git LFS if needed)
-# data/Synthetic_enhancer_seq/*.txt
-# data/MPRA_reporter_counts/*.txt
+# Large data files - DO NOT COMMIT
+data/Synthetic_enhancer_seq/*.txt
+data/MPRA_reporter_counts/*.txt
+data/mm9_ref/*.fna
+data/mm9_ref/*.fai
+
+# Large output files - DO NOT COMMIT
+outputs/01_prepared_data/mpra_variants_with_2kb_sequences.csv
+outputs/02_alphagenome_predictions/alphagenome_predictions_all_variants.csv
+outputs/02_alphagenome_predictions/checkpoints/
+
+# Runtime logs
+*.log
+prediction_log.txt
+benchmark_log.txt
 
 # Git
 .git/
