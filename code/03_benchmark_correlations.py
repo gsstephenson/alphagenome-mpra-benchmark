@@ -217,15 +217,34 @@ def plot_heatmap_correlation(corr_matrix, output_file):
 def analyze_per_tf(df, mpra_col, pred_col):
     """
     VERSION 2: Analyze correlations for each transcription factor separately.
+    Extracts TF names from tf_info, filtering out numeric position codes.
     """
-    # Extract TF name from tf_info column
+    # Extract TF names from tf_info column
+    # Format examples: "err1_82_92_atf3", "lxr_vbp_4_1", "myb_24_38_rar"
+    # We want to extract non-numeric TF names (atf3, lxr, vbp, myb, rar)
+    def extract_tf_names(tf_str):
+        if pd.isna(tf_str) or tf_str == 'wt':
+            return ['wt']
+        
+        parts = tf_str.split('_')
+        # Filter out numeric-only parts (position codes)
+        tf_names = [p for p in parts if not p.isdigit() and p.isalpha()]
+        return tf_names if tf_names else ['unknown']
+    
+    df = df.copy()
+    df['tf_names_list'] = df['tf_info'].apply(extract_tf_names)
+    
+    # Explode so each TF gets its own row (variants can have multiple TFs)
+    df_exploded = df.explode('tf_names_list')
+    df_exploded = df_exploded.rename(columns={'tf_names_list': 'tf_name'})
+    
     tf_results = []
     
-    for tf_name in df['tf_info'].unique():
-        if pd.isna(tf_name):
+    for tf_name in df_exploded['tf_name'].unique():
+        if pd.isna(tf_name) or tf_name == '' or tf_name == 'unknown':
             continue
         
-        tf_df = df[df['tf_info'] == tf_name]
+        tf_df = df_exploded[df_exploded['tf_name'] == tf_name]
         
         if len(tf_df) < 10:  # Skip TFs with too few variants
             continue
