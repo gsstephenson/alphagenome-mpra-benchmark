@@ -48,3 +48,5 @@ run_validation.log
 
 # Git
 .git/
+.archive/
+*.sh
