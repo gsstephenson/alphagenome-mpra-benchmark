@@ -33,10 +33,18 @@ outputs/01_prepared_data/mpra_variants_with_2kb_sequences.csv
 outputs/02_alphagenome_predictions/alphagenome_predictions_all_variants.csv
 outputs/02_alphagenome_predictions/checkpoints/
 
+# Wild-type validation large files - DO NOT COMMIT
+outputs/05_wildtype_validation/wildtype_predictions.csv
+outputs/05_wildtype_validation/wildtype_sequences_reconstructed.csv
+outputs/05_wildtype_validation/wildtype_vs_mutant_comparison.csv
+outputs/05_wildtype_validation/checkpoints/
+
 # Runtime logs
 *.log
 prediction_log.txt
 benchmark_log.txt
+wildtype_validation*.log
+run_validation.log
 
 # Git
 .git/
