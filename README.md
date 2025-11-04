@@ -26,12 +26,60 @@
 
 Systematically benchmark AlphaGenome's regulatory predictions against empirical MPRA data from **6,863 synthetic enhancer variants**—an extreme edge case test involving systematically perturbed transcription factor binding sites in episomal (plasmid-based) reporters.
 
-### Why This Matters
+### How This Experiment Works
+
+#### **Experimental Design**
+The GSE84888 dataset (Grossman et al., 2017) used a sophisticated affinity gradient approach:
+
+1. **Starting Point**: 95 natural enhancer sequences (~2KB each) containing known transcription factor binding sites
+2. **Systematic Mutations**: Each TF binding site was systematically mutated to create an **affinity gradient**
+   - Position Weight Matrices (PWMs) define the expected sequence for each TF binding site
+   - Mutations were designed to incrementally reduce binding affinity scores
+   - Example: If optimal motif = `AGGTCA`, mutations might be `AGGTAA` (slight reduction) → `AGTTCA` (moderate) → `TTTTCA` (severe)
+   - This creates a gradient from high-affinity (strong binding) to low-affinity (weak/no binding)
+
+3. **MPRA Measurement**: Each variant was cloned into plasmids and tested in cells
+   - Plasmids transfected into liver cells (episomal/non-integrated state)
+   - Reporter gene expression measured for each variant
+   - **Output**: Empirical activity measurements showing how each mutation affects enhancer function
+   - **Expectation**: Lower affinity mutations → Lower MPRA activity
+
+#### **Inputs & Outputs**
+
+**Inputs to AlphaGenome**:
+- Sequence data: 2,048 bp regions (with 16bp mutations embedded)
+- Ontology: K562 cell line (human erythroleukemia)
+- Model: AlphaGenome's chromatin accessibility predictor
+
+**Outputs from AlphaGenome**:
+- DNase hypersensitivity scores (chromatin accessibility)
+- CAGE scores (transcription start site activity)
+- RNA expression predictions
+- Each metric evaluated at: center position (mutation site), maximum in region, mean across region
+
+**Comparison**:
+- X-axis: MPRA activity measurements (empirical reporter expression)
+- Y-axis: AlphaGenome predictions (DNase/CAGE/RNA scores)
+- Statistical measures: Pearson correlation (r), Spearman correlation (ρ), AUROC
+- **Goal**: Strong positive correlation (r > 0.5) would indicate AlphaGenome captures regulatory variant effects
+
+#### **Why the Affinity Gradient Matters**
+
+The systematic mutation design is crucial because it:
+- Creates a **quantitative relationship** between sequence changes and expected function
+- Tests the model's sensitivity to binding site disruption
+- Allows evaluation across a continuous spectrum (not just binary WT vs mutant)
+- Mimics natural variation but in a controlled experimental framework
+- Provides statistical power through systematic sampling of mutation space
+
+### Scientific Significance
 
 This analysis reveals fundamental insights about:
 1. **Model robustness**: How AlphaGenome handles synthetic vs natural sequences
-2. **Context dependency**: Episomal MPRA vs native chromatin environments
-3. **Validation strategies**: What benchmarks are appropriate for chromatin models
+2. **Context dependency**: Episomal MPRA vs native chromatin environments  
+3. **Prediction mechanisms**: Whether models capture motif logic vs chromatin context
+4. **Validation strategies**: What benchmarks are appropriate for chromatin models
+5. **Biological complexity**: The disconnect between TF binding and chromatin state
 
 ---
 
