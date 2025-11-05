@@ -19,10 +19,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+from pathlib import Path
+
+# Set paths
+BASE_DIR = Path('/mnt/work_1/gest9386/CU_Boulder/rotations/LAYER/GSE84888_MPRA')
+DATA_DIR = BASE_DIR / 'outputs' / '02_alphagenome_predictions'
+OUTPUT_DIR = BASE_DIR / 'outputs' / '04_pparg_results'
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Load data
 print("Loading data...")
-df = pd.read_csv('outputs/02_alphagenome_predictions/alphagenome_predictions_all_variants.csv')
+df = pd.read_csv(DATA_DIR / 'alphagenome_predictions_all_variants.csv')
 
 # Filter PPARγ variants
 print("\n=== PPARγ Variant Analysis ===")
@@ -226,7 +233,7 @@ else:
     ax.text(0.5, 0.5, 'No co-TF data', ha='center', va='center', transform=ax.transAxes)
 
 plt.tight_layout()
-plt.savefig('outputs/03_benchmark_results/pparg_paradox_investigation.png', dpi=300, bbox_inches='tight')
+plt.savefig(OUTPUT_DIR / 'pparg_paradox_investigation.png', dpi=300, bbox_inches='tight')
 print("✓ Saved: pparg_paradox_investigation.png")
 
 # Generate summary report

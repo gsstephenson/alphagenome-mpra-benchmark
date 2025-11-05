@@ -56,6 +56,8 @@ def main():
         ('01_prepare_mpra_data.py', 'Data Preparation'),
         ('02_run_alphagenome_predictions.py', 'AlphaGenome Predictions'),
         ('03_benchmark_correlations.py', 'Benchmark Analysis'),
+        ('04_pparg_paradox_investigation.py', 'PPARγ Paradox Investigation'),
+        ('05_wildtype_validation.py', 'Wildtype Validation'),
     ]
     
     # Run each step
@@ -85,6 +87,12 @@ def main():
     print("    - ROC curves (3 files)")
     print("    - correlation_heatmap.png")
     print("    - prediction_distributions.png")
+    print("  04_pparg_results/")
+    print("    - pparg_paradox_investigation.png")
+    print("  05_wildtype_validation/")
+    print("    - wildtype_vs_mutant_correlations.png")
+    print("    - mutation_effect_distributions.png")
+    print("    - correlation_comparison_summary.csv")
     print("\n" + "="*70)
 
 if __name__ == '__main__':
