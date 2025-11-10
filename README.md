@@ -9,30 +9,32 @@
 ## 🎯 TL;DR - Key Findings
 
 ### Main Discovery
-**MPRA episomal context, not synthetic mutations, limits AlphaGenome's predictive performance.** Wild-type and mutant sequences show nearly identical weak correlations (r ~ 0.05-0.09), revealing that plasmid-based reporter assays fail to recapitulate the native chromatin environment that AlphaGenome was trained to predict.
+**MPRA episomal context, not synthetic mutations, limits AlphaGenome's predictive performance.** Wild-type and mutant sequences show nearly identical weak correlations (r ~ 0.07-0.09), revealing that plasmid-based reporter assays fail to recapitulate the native chromatin environment that AlphaGenome was trained to predict.
 
 ### Take-Home Messages
 
-1. **📊 Weak but Significant Correlations** (r = 0.053, p < 10⁻⁵)
+1. **📊 Weak but Significant Correlations** (r = 0.075, p < 10⁻⁴)
    - AlphaGenome detects regulatory signal even in this extreme edge case
    - Performance is context-dependent: works best on natural sequences in native chromatin
 
-2. **🧬 PPARγ Paradox Explained** (r = -0.244)
+2. **🧬 PPARγ Paradox Explained** (r = -0.243)
    - Strong negative correlation for the study's primary target
    - AlphaGenome predicts based on genomic context (high accessibility at PPARγ loci)
    - MPRA measures disrupted motif activity in episomal plasmids
    - Demonstrates model captures chromatin biology beyond simple motif presence
 
 3. **✅ Model Robustness Validated**
-   - Wild-type sequences: r = 0.071-0.091
+   - Wild-type sequences: r = 0.072-0.092
    - Mutant sequences: r = 0.074-0.091  
    - **No significant difference** → Synthetic mutations are NOT the problem
    - AlphaGenome is stable across sequence variants
 
-4. **⚠️ Benchmark Design Matters**
-   - This is an **adversarial edge case**: synthetic mutations, episomal context, cross-species
-   - Proper validation requires: natural variants + native chromatin + species-matched predictions
-   - MPRA is not an appropriate benchmark for chromatin accessibility models
+4. **⚠️ This Is an Adversarial Edge Case**
+   - Synthetic mutations (disrupted regulatory logic)
+   - Episomal context (no native chromatin structure)
+   - Cross-species prediction (mouse sequences, human model)
+   - Isolated 2KB windows (missing long-range interactions)
+   - **Proper validation requires**: natural variants + native chromatin + species-matched predictions
 
 ![Correlation Heatmap](outputs/03_benchmark_results/correlation_heatmap.png)
 *Figure 1: Overall correlation patterns between AlphaGenome predictions and MPRA measurements*
@@ -41,15 +43,13 @@
 
 ## 🔬 Experimental Design
 
-### How the Study Works
-
 **The GSE84888 Dataset:**
 - 95 natural mouse enhancer sequences (~2KB each)
 - Systematic mutations across 16 transcription factor binding sites
 - **Affinity gradient approach**: Each TF motif mutated to create strength spectrum (high → low affinity)
 - 6,963 total variants tested in MPRA (episomal plasmid reporters)
 
-**Our Analysis Pipeline:**
+**Analysis Pipeline:**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -88,25 +88,21 @@
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Why This Is an Edge Case:**
-- ⚠️ Synthetic mutations (disrupted regulatory logic)
-- ⚠️ Episomal context (no native chromatin structure)
-- ⚠️ Cross-species prediction (mouse sequences, human model)
-- ⚠️ Isolated 2KB windows (missing long-range interactions)
-
 ---
 
-## � Results & Visualizations
+## 📊 Results & Visualizations
 
 ### Overall Performance
 
 **Correlation Summary (N=6,963 variants):**
 
-| Metric | Pearson r | Spearman ρ | p-value | Interpretation |
-|--------|-----------|------------|---------|----------------|
-| DNase (center) | 0.053 | 0.096 | 9.2×10⁻⁶ | Weak positive ✓ |
-| CAGE (center) | 0.040 | 0.118 | 8.0×10⁻⁴ | Weak positive ✓ |
-| RNA-seq (center) | 0.010 | 0.066 | 0.397 | Not significant |
+| Metric | Pearson r | Spearman ρ | p-value | AUROC |
+|--------|-----------|------------|---------|-------|
+| **DNase (center)** | 0.075 | 0.095 | < 0.0001 | 0.538 |
+| **CAGE (center)** | 0.091 | 0.119 | < 0.0001 | 0.543 |
+| **RNA (center)** | 0.048 | 0.071 | < 0.001 | 0.522 |
+
+**Interpretation**: AlphaGenome captures some regulatory signal but correlations are much weaker than typical benchmarks (usually r > 0.5).
 
 ![Scatter Plots](outputs/03_benchmark_results/scatter_dnase_center.png)
 *Figure 2: DNase predictions vs MPRA activity showing weak but significant correlation*
@@ -144,17 +140,16 @@
 - AlphaGenome predicts PPARγ loci as **4.2× more accessible** than other TFs
 - These predictions reflect **native genomic context** (high accessibility)
 - MPRA measures **disrupted motif activity** in episomal plasmids
-- Result: High prediction + low MPRA = negative correlation
+- Result: High prediction (native context) + Low MPRA (disrupted motif) = negative correlation
 
 **Chromosome-Specific Effects:**
-- chr3: r = -0.587 (very strong negative)
+- chr3: r = -0.587 (very strong negative, 47% of PPARγ variants)
 - chr5: r = -0.460 (strong negative)
-- These chromosomes drive 47% of all PPARγ variants
 
 **Co-Regulator Effects:**
 - PPARγ alone: r = -0.250 (p < 10⁻⁶)
 - PPARγ + RXR: r = -0.036 (not significant)
-- RXR presence eliminates negative correlation
+- **Interpretation**: RXR presence eliminates negative correlation
 
 ---
 
@@ -173,18 +168,18 @@
 
 ### Wild-Type Validation
 
-**Testing the hypothesis: Do synthetic mutations degrade performance?**
+**Hypothesis**: Synthetic mutations degrade performance → Natural WT sequences should show stronger correlations
 
 ![WT vs Mutant Correlations](outputs/05_wildtype_validation/wildtype_vs_mutant_correlations.png)
 *Figure 6: Side-by-side comparison of wild-type and mutant sequence predictions*
 
-**Results (N=4,798,353 comparisons):**
+**Results (N=6,863 variants):**
 
 | Metric | Mutant r | WT r | Δr | Better? |
 |--------|----------|------|-----|---------|
-| DNase | 0.0743 | 0.0713 | -0.003 | ❌ No |
-| RNA | 0.0481 | 0.0482 | +0.0001 | ~ Identical |
-| CAGE | 0.0909 | 0.0913 | +0.0004 | ~ Identical |
+| DNase | 0.0746 | 0.0716 | -0.003 | ❌ No |
+| RNA | 0.0480 | 0.0480 | +0.00009 | ~ Identical |
+| CAGE | 0.0913 | 0.0918 | +0.0005 | ~ Identical |
 
 ![Mutation Effects](outputs/05_wildtype_validation/mutation_effect_distributions.png)
 *Figure 7: Distribution of prediction changes between mutant and wild-type sequences*
@@ -266,15 +261,6 @@ if row['strand'] == '-':
 - Context-driven (flanking sequence important)
 - Training data lacks MPRA-style perturbations
 
-### For Future Validation Studies
-**Proper Benchmark Design:**
-1. Use naturally occurring variants (GTEx eQTLs, GWAS hits)
-2. Measure endogenous chromatin (ATAC-seq, DNase-seq on genomic loci)
-3. Match species (human variants + human model + human cells)
-4. Preserve genomic context (native chromosomal locations)
-
-**Expected Improvement:** r = 0.05-0.09 (MPRA) → r = 0.5-0.7 (endogenous)
-
 ---
 
 ## 📁 Repository Structure
@@ -316,7 +302,7 @@ conda activate alphagenome-env
 pip install pandas numpy scipy matplotlib seaborn tqdm pyfaidx alphagenome python-dotenv
 
 # Configure API key
-echo "ALPHA_GENOME_KEY=your_key_here" > ../Alpha_genome_quickstart_notebook/.env
+export ALPHA_GENOME_KEY=your_key_here
 
 # Run complete pipeline
 cd code
@@ -325,157 +311,45 @@ python run_pipeline.py
 
 ---
 
-## 📚 Citation
+## 🎓 Scientific Implications
 
-**Dataset:**
-Grossman et al. (2017). *Systematic dissection of genomic features determining transcription factor binding and enhancer function.* PNAS 114(7):E1291-E1300. PMID: 28137873
+### For AlphaGenome
 
-**AlphaGenome:**
-Evaluating AlphaGenome's regulatory predictions on an extreme edge case involving synthetic mutations and episomal reporter assays.
+✅ **Model validates**:
+- Robust to sequence variants (WT ≈ Mutant)
+- Context-driven architecture appropriate for 2KB windows
+- Captures complex chromatin biology (PPARγ paradox)
 
----
+⚠️ **Model limitations**:
+- Requires native chromatin context for validation
+- MPRA episomal reporters are poor benchmarks
+- Cross-species predictions add complexity
 
-## 🎓 Scientific Value
+### For MPRA Benchmarking
 
-This analysis provides:
+⚠️ **MPRA is not ideal** for chromatin accessibility models:
+1. Episomal context lacks native chromatin structure
+2. Missing long-range regulatory interactions
+3. Artificial nucleosome positioning
+4. No histone modifications
 
-1. **Negative Result Documentation** - MPRA limitations for chromatin model validation
-2. **Model Characterization** - AlphaGenome is appropriately context-driven
-3. **Benchmark Critique** - Importance of native chromatin context
-4. **Mechanistic Insights** - PPARγ paradox reveals context vs motif tradeoffs
-5. **Path Forward** - Design principles for proper validation studies
+✅ **Better benchmarks** would include:
+- Naturally occurring variants (SNPs, indels)
+- Endogenous chromatin measurements (ATAC-seq, DNase-seq)
+- Species-matched predictions
+- Native genomic loci
 
-**Bottom Line:** AlphaGenome performs as expected on an adversarial edge case, revealing the importance of matching evaluation datasets to a model's training distribution and intended use case.
+### Key Insights
 
-## 🎯 Project Overview
+**PPARγ paradox reveals**:
+- Context vs motif tradeoff in predictions
+- Chromatin remodeling complexity
+- Chromosome-specific regulatory effects
 
-### Objective
-
-Systematically benchmark AlphaGenome's regulatory predictions against empirical MPRA data from **6,863 synthetic enhancer variants**—an extreme edge case test involving systematically perturbed transcription factor binding sites in episomal (plasmid-based) reporters.
-
-### How This Experiment Works
-
-#### **Experimental Design**
-The GSE84888 dataset (Grossman et al., 2017) used a sophisticated affinity gradient approach:
-
-1. **Starting Point**: 95 natural enhancer sequences (~2KB each) containing known transcription factor binding sites
-2. **Systematic Mutations**: Each TF binding site was systematically mutated to create an **affinity gradient**
-   - Position Weight Matrices (PWMs) define the expected sequence for each TF binding site
-   - Mutations were designed to incrementally reduce binding affinity scores
-   - Example: If optimal motif = `AGGTCA`, mutations might be `AGGTAA` (slight reduction) → `AGTTCA` (moderate) → `TTTTCA` (severe)
-   - This creates a gradient from high-affinity (strong binding) to low-affinity (weak/no binding)
-
-3. **MPRA Measurement**: Each variant was cloned into plasmids and tested in cells
-   - Plasmids transfected into liver cells (episomal/non-integrated state)
-   - Reporter gene expression measured for each variant
-   - **Output**: Empirical activity measurements showing how each mutation affects enhancer function
-   - **Expectation**: Lower affinity mutations → Lower MPRA activity
-
-#### **Inputs & Outputs**
-
-**Inputs to AlphaGenome**:
-- Sequence data: 2,048 bp regions (with 16bp mutations embedded)
-- Ontology: K562 cell line (human erythroleukemia)
-- Model: AlphaGenome's chromatin accessibility predictor
-
-**Outputs from AlphaGenome**:
-- DNase hypersensitivity scores (chromatin accessibility)
-- CAGE scores (transcription start site activity)
-- RNA expression predictions
-- Each metric evaluated at: center position (mutation site), maximum in region, mean across region
-
-**Comparison**:
-- X-axis: MPRA activity measurements (empirical reporter expression)
-- Y-axis: AlphaGenome predictions (DNase/CAGE/RNA scores)
-- Statistical measures: Pearson correlation (r), Spearman correlation (ρ), AUROC
-- **Goal**: Strong positive correlation (r > 0.5) would indicate AlphaGenome captures regulatory variant effects
-
-#### **Why the Affinity Gradient Matters**
-
-The systematic mutation design is crucial because it:
-- Creates a **quantitative relationship** between sequence changes and expected function
-- Tests the model's sensitivity to binding site disruption
-- Allows evaluation across a continuous spectrum (not just binary WT vs mutant)
-- Mimics natural variation but in a controlled experimental framework
-- Provides statistical power through systematic sampling of mutation space
-
-### Scientific Significance
-
-This analysis reveals fundamental insights about:
-1. **Model robustness**: How AlphaGenome handles synthetic vs natural sequences
-2. **Context dependency**: Episomal MPRA vs native chromatin environments  
-3. **Prediction mechanisms**: Whether models capture motif logic vs chromatin context
-4. **Validation strategies**: What benchmarks are appropriate for chromatin models
-5. **Biological complexity**: The disconnect between TF binding and chromatin state
-
----
-
-## 📊 Key Findings Summary
-
-### 1. AlphaGenome Performance on MPRA
-
-**Weak but significant positive correlations** across all metrics:
-
-| Metric | Pearson r | Spearman ρ | p-value | AUROC |
-|--------|-----------|------------|---------|-------|
-| **DNase (center)** | 0.075 | 0.095 | < 0.0001 | 0.538 |
-| **CAGE (center)** | 0.091 | 0.119 | < 0.0001 | 0.543 |
-| **RNA (center)** | 0.048 | 0.071 | < 0.001 | 0.522 |
-
-**Interpretation**: AlphaGenome captures some regulatory signal but correlations are much weaker than typical benchmarks (usually r > 0.5).
-
-### 2. PPARγ Paradox ⚠️
-
-**Discovery**: PPARγ (the primary study target) shows **negative correlation** (r = -0.244, p < 10⁻⁶)
-
-**Mechanism identified**:
-- **AlphaGenome**: Context-driven predictions (chromatin remodeling, nucleosome positioning)
-- **MPRA**: Motif-driven activity (direct TF binding strength)
-- **Result**: When MPRA shows high activity (strong motif), AlphaGenome predicts low accessibility (closed chromatin)
-
-**Chromosome effects**:
-- chr3: r = -0.587 (very strong negative)
-- chr5: r = -0.460 (strong negative)
-
-**Biological insight**: AlphaGenome captures complex chromatin biology beyond simple motif presence.
-
-📄 **Details:** See `PPARG_PARADOX_ANALYSIS.md`
-
-### 3. Wild-Type Validation ✅ (Version 3.0)
-
-**Hypothesis**: Synthetic mutations degrade performance → Natural WT sequences should show stronger correlations (r > 0.3)
-
-**Results: HYPOTHESIS REJECTED**
-
-| Metric | Mutant r | WT r | Δ r | Better? |
-|--------|----------|------|-----|---------|
-| DNase | 0.0746 | 0.0716 | -0.003 | ❌ No |
-| RNA | 0.0480 | 0.0480 | +0.00009 | ~ |
-| CAGE | 0.0913 | 0.0918 | +0.0005 | ~ |
-
-**Conclusion**: WT and mutant sequences show **nearly identical weak correlations**. This proves:
-- ✅ AlphaGenome is **robust** to sequence variants
-- ⚠️ MPRA episomal context is the **primary limitation**
-- 📍 2048bp context dominates 16bp variant signal (99.2% vs 0.8%)
-
-📄 **Details:** See `FINAL_ANALYSIS.md`
-
-### 4. Edge Case Characterization
-
-GSE84888 is an **adversarial test** for genomic models:
-
-| Challenge | Impact |
-|-----------|--------|
-| ⚠️ **Synthetic mutations** | Disrupted regulatory logic |
-| ⚠️ **Episomal reporters** | Lacks native chromatin structure |
-| ⚠️ **Cross-species** | Mouse sequences + human K562 model |
-| ⚠️ **Isolated context** | 2KB regions lack full regulatory network |
-| ⚠️ **Motif perturbations** | Creates affinity gradients (non-natural) |
-
-**What AlphaGenome was designed for**:
-- ✅ Natural genomic sequences
-- ✅ Endogenous chromatin context
-- ✅ Species-matched predictions
+**Validation strategy lessons**:
+- Document negative results (important!)
+- Test model assumptions explicitly
+- Match benchmarks to model design
 
 ---
 
@@ -555,47 +429,12 @@ GSE84888_MPRA/
 
 ---
 
-## 🚀 Usage
+##  Dataset Details
 
-### Quick Start
-
-```bash
-# Clone repository
-git clone https://github.com/gsstephenson/alphagenome-mpra-benchmark
-cd GSE84888_MPRA
-
-# Setup environment
-conda create -n alphagenome-env python=3.11
-conda activate alphagenome-env
-pip install pandas numpy scipy matplotlib seaborn tqdm pyfaidx requests
-
-# Run full pipeline
-python code/01_data_preparation.py
-python code/02_alphafold_predictions.py
-python code/03_benchmark_analysis.py
-python code/04_pparg_paradox_investigation.py
-python code/05_wildtype_validation.py
-```
-
-### Individual Analyses
-
-```bash
-# PPARγ paradox investigation
-python code/04_pparg_paradox_investigation.py
-
-# Wild-type validation
-python code/05_wildtype_validation.py
-```
-
----
-
-## 📊 Dataset Details
-
-### GSE84888 (Grossman et al., 2017)
+**GSE84888 (Grossman et al., 2017)**
 
 **Publication**: *Systematic dissection of genomic features determining transcription factor binding and enhancer function*  
-**Journal**: PNAS 2017;114(7):E1291-E1300  
-**PMID**: 28137873
+**Journal**: PNAS 2017;114(7):E1291-E1300 | **PMID**: 28137873
 
 **Design**:
 - 32,115 synthetic enhancers across 7 pools
@@ -611,138 +450,53 @@ python code/05_wildtype_validation.py
 
 ---
 
-## 🎓 Scientific Implications
+## 📈 Technical Metrics
 
-### For AlphaGenome
+**Pipeline Performance:**
+- 13,726 total predictions (6,863 mutant + 6,863 WT)
+- 100% success rate (no failures)
+- ~60 minutes total runtime
+- Checkpointing every 100 sequences
+- Automatic error recovery
 
-✅ **Model validates**:
-- Robust to sequence variants (WT ≈ Mutant)
-- Context-driven architecture appropriate for 2KB windows
-- Captures complex chromatin biology (PPARγ paradox)
-
-⚠️ **Model limitations**:
-- Requires native chromatin context for validation
-- MPRA episomal reporters are poor benchmarks
-- Cross-species predictions add complexity
-
-### For MPRA Benchmarking
-
-⚠️ **MPRA is not ideal** for chromatin accessibility models:
-1. Episomal context lacks native chromatin structure
-2. Missing long-range regulatory interactions
-3. Artificial nucleosome positioning
-4. No histone modifications
-
-✅ **Better benchmarks** would include:
-- Naturally occurring variants (SNPs, indels)
-- Endogenous chromatin measurements (ATAC-seq, DNase-seq)
-- Species-matched predictions
-- Native genomic loci
-
-### For Regulatory Genomics
-
-**PPARγ insights**:
-- Context vs motif tradeoff in predictions
-- Chromatin remodeling complexity
-- Chromosome-specific regulatory effects
-
-**Validation strategies**:
-- Document negative results (important!)
-- Test model assumptions explicitly
-- Match benchmarks to model design
-
----
-
-## 📈 Statistical Summary
-
-### Sample Sizes
-- **Total variants**: 6,863
-- **Chromosomes**: chr3 (3,368), chr5 (3,495)
-- **Strands**: Plus (3,432), Minus (3,431)
-- **WT comparison**: 4.7M data points (after merge)
-
-### Performance
-- **Prediction rate**: ~3.9 sequences/second
-- **Checkpoints**: 69 files (every 100 sequences)
-- **Runtime**: 29.5 min (WT), 30 min (mutant)
-- **API stability**: 100% (no errors)
-
-### Statistical Power
-- **N = 6,863**: Power >99% for r > 0.05
-- **WT comparison**: Power >99.9% for Δr > 0.001
-- **All p-values**: Highly significant (p < 0.0001)
-- **Effect sizes**: Small but detectable (r ~ 0.05-0.09)
+**Statistical Power:**
+- N = 6,863 variants: Power >99% to detect r > 0.05
+- All reported p-values: Highly significant (p < 0.001)
+- Effect sizes: Small but detectable (r ~ 0.07-0.09)
 
 ---
 
 ## 🔮 Future Directions
 
-### Immediate Opportunities
-
-1. **Endogenous variant validation**
-   - Use naturally occurring SNPs with chromatin QTLs
-   - Match species: human variants + K562 + human model
-   
-2. **Native chromatin datasets**
-   - ATAC-seq, DNase-seq, ChIP-seq on genomic loci
-   - Compare to endogenous measurements
-
-3. **Larger variant windows**
-   - Test >100bp insertions/deletions
-   - Overcome 2048bp context dominance
-
-### Methodological Extensions
-
-1. **Multi-ontology predictions** (compare cell lines)
-2. **Feature attribution** (DeepLIFT/SHAP for variant effects)
-3. **Temporal predictions** (developmental time series)
-
-### Collaboration
-
-1. Share findings with AlphaGenome team
-2. Document best practices for MPRA community
-3. Contribute to regulatory genomics field
+1. **Endogenous variant validation** - Use naturally occurring SNPs with chromatin QTLs in matched cell types
+2. **Native chromatin datasets** - ATAC-seq, DNase-seq, ChIP-seq on genomic loci
+3. **Multi-ontology predictions** - Compare cell line-specific predictions
+4. **Feature attribution** - DeepLIFT/SHAP for variant effect interpretation
 
 ---
-
-## 📚 Documentation Files
-
-| File | Purpose |
-|------|---------|
-| **README.md** | This file - complete project overview |
-| **RESULTS_SUMMARY.md** | Detailed technical results and statistics |
-| **PPARG_PARADOX_ANALYSIS.md** | PPARγ negative correlation investigation |
-| **FINAL_ANALYSIS.md** | Wild-type validation comprehensive analysis |
 
 ---
 
 ## ✅ Project Status
 
-**COMPLETE** - All analyses finished, documented, and pushed to GitHub
+**COMPLETE** - All analyses finished and documented
 
-- ✅ 6,863 variants predicted (mutant)
-- ✅ 6,863 variants predicted (WT)
+- ✅ 13,726 predictions (mutant + wild-type)
 - ✅ PPARγ paradox explained
 - ✅ WT validation completed
 - ✅ Edge case characterized
-- ✅ All code documented
 - ✅ Publication-quality figures
-- ✅ GitHub repository up-to-date
-
-**Branch**: main (merged from v3)  
-**Latest commit**: `725a3a4` - Project completion summary
 
 ---
 
-## 📧 Citation & Contact
+## � Citation
 
-**Project**: Layer Laboratory Rotation, CU Boulder  
-**Repository**: https://github.com/gsstephenson/alphagenome-mpra-benchmark  
-**Version**: 3.0 (Wild-Type Validation Complete)  
-**Date**: November 3, 2025
+**Dataset:**  
+Grossman SR, Zhang X, Wang L, et al. Systematic dissection of genomic features determining transcription factor binding and enhancer function. *Proc Natl Acad Sci U S A.* 2017;114(7):E1291-E1300. PMID: 28137873
 
-**Primary Dataset**:  
-Grossman SR, Zhang X, Wang L, et al. Systematic dissection of genomic features determining transcription factor binding and enhancer function. *Proc Natl Acad Sci U S A.* 2017;114(7):E1291-E1300.
+**Repository:**  
+https://github.com/gsstephenson/alphagenome-mpra-benchmark  
+Layer Laboratory, CU Boulder | Version 3.0 | November 2025
 
 ---
 
@@ -758,4 +512,4 @@ Grossman SR, Zhang X, Wang L, et al. Systematic dissection of genomic features d
 
 ---
 
-*Last updated: November 3, 2025*
+*Last updated: November 10, 2025*
